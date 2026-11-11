@@ -1,6 +1,8 @@
 
+import errno
 import logging
 import os
+from pathlib import Path, PurePosixPath
 from uuid import uuid4
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -46,6 +48,65 @@ def _delete_pending_documents(request):
                 exc_info=True,
             )
     request.session.pop(PENDING_DOCUMENTS_KEY, None)
+    _remove_empty_storage_directory("pending/expedientes", "pending")
+    _remove_empty_storage_directory("pending", "")
+
+
+def _remove_empty_storage_directory(relative_directory, expected_parent):
+    directory_path = PurePosixPath(relative_directory)
+    parent_path = PurePosixPath(expected_parent) if expected_parent else PurePosixPath(".")
+
+    if (
+        directory_path.is_absolute()
+        or ".." in directory_path.parts
+        or directory_path.parent != parent_path
+    ):
+        logger.warning(
+            "Se omitió eliminar un directorio con una ruta no esperada: %s.",
+            relative_directory,
+        )
+        return
+
+    try:
+        directory = Path(default_storage.path(str(directory_path))).resolve()
+        parent = Path(default_storage.path(expected_parent or "")).resolve()
+    except NotImplementedError:
+        return
+
+    if directory.parent != parent:
+        logger.warning(
+            "Se omitió eliminar un directorio fuera de su ubicación esperada: %s.",
+            relative_directory,
+        )
+        return
+
+    try:
+        directory.rmdir()
+    except FileNotFoundError:
+        pass
+    except OSError as error:
+        if (
+            error.errno not in (errno.ENOTEMPTY, errno.EEXIST)
+            and getattr(error, "winerror", None) != 145
+        ):
+            logger.warning(
+                "No se pudo eliminar el directorio vacío %s.",
+                directory,
+                exc_info=True,
+            )
+
+
+def _remove_empty_expediente_directories(archivos):
+    for relative_directory in {
+        PurePosixPath(archivo).parent for archivo in archivos
+    }:
+        if (
+            len(relative_directory.parts) != 2
+            or relative_directory.parts[0] != "documentos"
+        ):
+            continue
+
+        _remove_empty_storage_directory(str(relative_directory), "documentos")
 
 
 def registrar_expediente(request):
@@ -248,6 +309,8 @@ def eliminar_expediente(request, rfc):
                 exc_info=True,
             )
             archivos_no_eliminados.append(archivo)
+
+    _remove_empty_expediente_directories(archivos)
 
     if archivos_no_eliminados:
         messages.warning(

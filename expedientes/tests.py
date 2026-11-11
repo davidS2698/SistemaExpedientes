@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -214,6 +215,7 @@ class ExpedienteDocumentTests(TestCase):
         expediente = Expediente.objects.get(rfc="MNO123456XYZ")
         self.assertEqual(expediente.documentos.count(), 1)
         self.assertTrue(expediente.documentos.first().archivo.name.endswith("conservar.pdf"))
+        self.assertFalse(os.path.exists(os.path.join(self.media_directory.name, "pending")))
 
     def test_detail_page_accepts_additional_documents(self):
         response = self.client.post(
@@ -233,7 +235,9 @@ class ExpedienteDocumentTests(TestCase):
             archivo=self.uploaded_pdf("adjunto.pdf"),
         )
         archivo_guardado = documento.archivo.name
+        directorio_expediente = os.path.dirname(documento.archivo.path)
         self.assertTrue(documento.archivo.storage.exists(archivo_guardado))
+        self.assertTrue(os.path.isdir(directorio_expediente))
 
         response = self.client.post(
             reverse("eliminar_expediente", args=[self.expediente.rfc]),
@@ -249,6 +253,7 @@ class ExpedienteDocumentTests(TestCase):
         self.assertFalse(Expediente.objects.filter(pk=self.expediente.pk).exists())
         self.assertFalse(Documento.objects.filter(pk=documento.pk).exists())
         self.assertFalse(documento.archivo.storage.exists(archivo_guardado))
+        self.assertFalse(os.path.exists(directorio_expediente))
 
     def test_detail_shows_link_to_update_general_data(self):
         response = self.client.get(
