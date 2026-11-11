@@ -1,0 +1,53 @@
+{% extends "expedientes/base.html" %}
+
+{% block title %}Actualizar expediente {{ expediente.rfc }} | Gestión documental{% endblock %}
+
+{% block content %}
+    <div class="back-row">
+        <a href="{% url 'detalle_expediente' expediente.rfc %}" class="btn btn-quiet"><span aria-hidden="true">←</span> Volver al expediente</a>
+    </div>
+
+    <section class="page-heading">
+        <div>
+            <span class="eyebrow">EXPEDIENTE</span>
+            <h1>Actualizar datos generales</h1>
+            <p>Modifica la información asociada a {{ expediente.rfc }}.</p>
+        </div>
+    </section>
+
+    {% if messages %}
+        <div class="messages" role="status" aria-live="polite">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="form-card">
+        <div class="section-heading">
+            <div class="section-icon" aria-hidden="true">01</div>
+            <div>
+                <h2>Datos generales</h2>
+                <p>Los campos marcados son necesarios para guardar los cambios.</p>
+            </div>
+        </div>
+        <form method="post" class="data-form">
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name != "archivos" %}
+                    <div class="form-group">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="field-error">{{ field.errors|join:', ' }}</div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div class="form-actions form-group-wide">
+                <a href="{% url 'detalle_expediente' expediente.rfc %}" class="btn btn-quiet">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar cambios <span aria-hidden="true">→</span></button>
+            </div>
+        </form>
+    </section>
+{% endblock %}

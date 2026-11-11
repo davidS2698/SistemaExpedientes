@@ -1,0 +1,168 @@
+{% extends "expedientes/base.html" %}
+
+{% block title %}Expedientes | Gestión documental{% endblock %}
+
+{% block content %}
+    <section class="page-heading page-heading-row">
+        <div>
+            <span class="eyebrow">CONTROL DOCUMENTAL</span>
+            <h1>Expedientes</h1>
+            <p>Consulta los registros y accede a sus documentos.</p>
+        </div>
+        <span class="total-pill"><strong>{{ page_obj.paginator.count }}</strong> resultado{{ page_obj.paginator.count|pluralize:"s" }}</span>
+    </section>
+
+    {% if messages %}
+        <div class="messages" role="status" aria-live="polite">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="search-panel">
+        <div class="search-intro">
+            <div class="search-icon" aria-hidden="true">⌕</div>
+            <div>
+                <h2>Buscar expediente</h2>
+                <p>Ingresa el RFC completo para encontrar un registro.</p>
+            </div>
+        </div>
+        <form method="get" role="search" aria-label="Buscar expediente por RFC" class="search-form">
+            <label class="sr-only" for="rfc-search">RFC del expediente</label>
+            <input id="rfc-search" type="search" name="rfc" value="{{ rfc }}" placeholder="Ej. ABC123456XYZ" maxlength="13">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if rfc %}
+                <a href="{% url 'lista_expedientes' %}" class="btn btn-quiet">Limpiar</a>
+            {% endif %}
+        </form>
+    </section>
+
+    <div class="results-heading">
+        <h2>{% if rfc %}Resultado de búsqueda{% else %}Registros recientes{% endif %}</h2>
+        {% if rfc %}<span>RFC: <strong>{{ rfc }}</strong></span>{% endif %}
+    </div>
+
+    {% if expedientes %}
+        <section class="grid-list" aria-label="Lista de expedientes">
+            {% for expediente in expedientes %}
+                <article class="expediente-card">
+                    <div class="card-top">
+                        <span class="record-label">RFC</span>
+                        <span class="badge">{{ expediente.documentos.count }} documento{{ expediente.documentos.count|pluralize:"s" }}</span>
+                    </div>
+                    <h3>{{ expediente.rfc }}</h3>
+                    <p class="record-name">{{ expediente.nombre }}</p>
+                    <div class="card-meta">
+                        <span><small>CUENTA PREDIAL</small><strong>{{ expediente.predial }}</strong></span>
+                        <span><small>REGISTRADO</small><strong>{{ expediente.fecha_registro|date:"d/m/Y" }}</strong></span>
+                    </div>
+                    <div class="card-footer-actions">
+                        <a href="{% url 'detalle_expediente' expediente.rfc %}" class="card-link">Abrir expediente <span aria-hidden="true">→</span></a>
+                        <button
+                            type="button"
+                            class="btn-delete"
+                            data-delete-url="{% url 'eliminar_expediente' expediente.rfc %}"
+                            data-expediente-rfc="{{ expediente.rfc }}"
+                            aria-label="Eliminar expediente {{ expediente.rfc }}">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Eliminar</span>
+                        </button>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <section class="empty-state">
+            <div class="empty-icon" aria-hidden="true">⌕</div>
+            <h2>{% if rfc %}No encontramos ese expediente{% else %}Aún no hay expedientes{% endif %}</h2>
+            <p>
+                {% if rfc %}
+                    Verifica el RFC e intenta nuevamente.
+                {% else %}
+                    Cuando registres un expediente aparecerá en esta lista.
+                {% endif %}
+            </p>
+            {% if not rfc %}<a href="{% url 'registro' %}" class="btn btn-primary">Crear expediente</a>{% endif %}
+        </section>
+    {% endif %}
+
+    {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Paginación de expedientes">
+            {% if page_obj.has_previous %}
+                <a class="pagination-link" href="?page={{ page_obj.previous_page_number }}{% if rfc %}&amp;rfc={{ rfc|urlencode }}{% endif %}" aria-label="Página anterior">‹ Anterior</a>
+            {% else %}
+                <span class="pagination-link is-disabled" aria-disabled="true">‹ Anterior</span>
+            {% endif %}
+
+            <div class="pagination-pages">
+                {% for page_number in page_obj.paginator.page_range %}
+                    {% if page_number == page_obj.number %}
+                        <span class="pagination-page is-current" aria-current="page">{{ page_number }}</span>
+                    {% else %}
+                        <a class="pagination-page" href="?page={{ page_number }}{% if rfc %}&amp;rfc={{ rfc|urlencode }}{% endif %}" aria-label="Página {{ page_number }}">{{ page_number }}</a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if page_obj.has_next %}
+                <a class="pagination-link" href="?page={{ page_obj.next_page_number }}{% if rfc %}&amp;rfc={{ rfc|urlencode }}{% endif %}" aria-label="Página siguiente">Siguiente ›</a>
+            {% else %}
+                <span class="pagination-link is-disabled" aria-disabled="true">Siguiente ›</span>
+            {% endif %}
+        </nav>
+    {% endif %}
+
+    <dialog class="delete-dialog" id="delete-confirmation" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
+        <div class="delete-dialog-content">
+            <div class="delete-dialog-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <span class="eyebrow">CONFIRMAR ACCIÓN</span>
+            <h2 id="delete-dialog-title">¿Eliminar expediente?</h2>
+            <p id="delete-dialog-description">
+                Vas a eliminar el expediente <strong id="delete-dialog-rfc"></strong> y sus documentos adjuntos.
+                Esta acción no se puede deshacer.
+            </p>
+            <form method="post" id="delete-confirmation-form" class="delete-dialog-actions">
+                {% csrf_token %}
+                <button type="button" class="btn btn-quiet" id="delete-dialog-cancel">Cancelar</button>
+                <button type="submit" class="btn-delete-confirm">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Eliminar expediente
+                </button>
+            </form>
+        </div>
+    </dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        const deleteDialog = document.getElementById("delete-confirmation");
+        const deleteForm = document.getElementById("delete-confirmation-form");
+        const deleteRfc = document.getElementById("delete-dialog-rfc");
+        const deleteCancel = document.getElementById("delete-dialog-cancel");
+
+        document.querySelectorAll(".btn-delete[data-delete-url]").forEach((button) => {
+            button.addEventListener("click", () => {
+                deleteForm.action = button.dataset.deleteUrl;
+                deleteRfc.textContent = button.dataset.expedienteRfc;
+                deleteDialog.showModal();
+                deleteCancel.focus();
+            });
+        });
+
+        deleteCancel.addEventListener("click", () => deleteDialog.close());
+        deleteDialog.addEventListener("click", (event) => {
+            if (event.target === deleteDialog) {
+                deleteDialog.close();
+            }
+        });
+    </script>
+{% endblock %}

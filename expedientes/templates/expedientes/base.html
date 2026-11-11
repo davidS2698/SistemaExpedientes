@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#123c4a">
+    <title>{% block title %}Gestión de expedientes{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'expedientes/css/styles.css' %}?v=3">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <div class="topbar">
+            <a class="brand"">
+                <span class="brand-mark" aria-hidden="true">E</span>
+                <span class="brand-copy">
+                    <strong>Expedientes</strong>
+                    <small>Gestión documental</small>
+                </span>
+            </a>
+            <nav class="main-nav" aria-label="Navegación principal">
+                <a class="nav-cta" href="{% url 'lista_expedientes' %}"> Ver expedientes</a>
+                <a class="nav-cta" href="{% url 'registro' %}"><span aria-hidden="true">+</span> Nuevo expediente</a>
+            </nav>
+        </div>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">
+        <div>Gestión de expedientes <span aria-hidden="true">·</span> Administración documental</div>
+    </footer>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% extends "expedientes/base.html" %}
+
+{% block title %}Expediente {{ expediente.rfc }} | Gestión documental{% endblock %}
+
+{% block content %}
+    <div class="back-row">
+        <a href="{% url 'lista_expedientes' %}" class="btn btn-quiet"><span aria-hidden="true">←</span> Volver a expedientes</a>
+    </div>
+
+    <section class="detail-hero">
+        <div class="detail-hero-copy">
+            <span class="eyebrow">EXPEDIENTE</span>
+            <h1>{{ expediente.rfc }}</h1>
+            <p>{{ expediente.nombre }}</p>
+        </div>
+        <div class="detail-hero-stat">
+            <span>DOCUMENTOS</span>
+            <strong>{{ expediente.documentos.count }}</strong>
+        </div>
+    </section>
+
+    {% if messages %}
+        <div class="messages" role="status" aria-live="polite">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="info-card detail-info">
+        <div class="section-heading section-heading-between">
+            <div class="section-heading">
+                <div class="section-icon" aria-hidden="true">01</div>
+                <div>
+                    <h2>Datos generales</h2>
+                    <p>Información asociada a este registro.</p>
+                </div>
+            </div>
+            <a href="{% url 'editar_expediente' expediente.rfc %}" class="btn btn-outline">Actualizar datos <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="detail-grid">
+            <div class="detail-item"><span>Nombre</span><strong>{{ expediente.nombre }}</strong></div>
+            <div class="detail-item"><span>Cuenta predial</span><strong>{{ expediente.predial }}</strong></div>
+            <div class="detail-item detail-item-wide"><span>Dirección</span><strong>{{ expediente.direccion }}</strong></div>
+            <div class="detail-item detail-item-date">
+                <span>Fecha de registro</span>
+                <strong class="date-time">
+                    <span>{{ expediente.fecha_registro|date:"d/m/Y" }}</span>
+                    <span class="date-time-divider" aria-hidden="true"></span>
+                    <span>{{ expediente.fecha_registro|date:"H:i" }}</span>
+                </strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="documents-section">
+        <div class="section-heading section-heading-between">
+            <div class="section-heading">
+                <div class="section-icon" aria-hidden="true">02</div>
+                <div>
+                    <h2>Documentos adjuntos</h2>
+                    <p>Archivos PDF asociados al expediente.</p>
+                </div>
+            </div>
+        </div>
+
+        {% if expediente.documentos.all %}
+            <div class="documents">
+                {% for documento in expediente.documentos.all %}
+                    <article class="document-item">
+                        <div class="file-icon" aria-hidden="true">PDF</div>
+                        <div class="document-copy">
+                            <strong class="doc-name">{{ documento.archivo.name }}</strong>
+                            <span>Agregado {{ documento.fecha_subida|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="doc-actions">
+                            <a href="{{ documento.archivo.url }}" class="btn btn-quiet" target="_blank" rel="noopener">Ver</a>
+                            <a href="{{ documento.archivo.url }}" class="btn btn-outline" download>Descargar</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state empty-state-compact">
+                <h2>No hay documentos adjuntos</h2>
+                <p>Usa el formulario para agregar archivos PDF a este expediente.</p>
+            </div>
+        {% endif %}
+
+        <section class="form-card add-documents-card">
+            <div class="section-heading">
+                <div class="section-icon section-icon-add" aria-hidden="true">+</div>
+                <div>
+                    <h2>Agregar documentos</h2>
+                    <p>Puedes seleccionar uno o varios archivos PDF, de hasta 10 MB cada uno.</p>
+                </div>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="upload-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ form.archivos.label_tag }}
+                    {{ form.archivos }}
+                    {% if form.archivos.errors %}
+                        <div class="field-error">{{ form.archivos.errors|join:', ' }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar documentos <span aria-hidden="true">→</span></button>
+            </form>
+        </section>
+    </section>
+{% endblock %}

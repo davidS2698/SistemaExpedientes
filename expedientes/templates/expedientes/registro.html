@@ -1,0 +1,91 @@
+{% extends "expedientes/base.html" %}
+{% load static %}
+
+{% block title %}Nuevo expediente | Gestión documental{% endblock %}
+
+{% block content %}
+    <section class="page-heading page-heading-with-logo">
+        <div class="page-heading-copy">
+            <span class="eyebrow">REGISTRO</span>
+            <h1>Crear expediente</h1>
+            <p>Captura los datos del titular y adjunta los documentos PDF correspondientes.</p>
+        </div>
+        <img class="registration-logo" src="{% static 'expedientes/img/logo.jpeg' %}" alt="Ciudad Próspera 2024–2027">
+    </section>
+
+    {% if messages %}
+        <div class="messages" role="status" aria-live="polite">
+            {% for message in messages %}
+                {% if 'success' in message.tags %}
+                    <div class="success-modal-backdrop" id="success-modal" role="alertdialog" aria-modal="true" aria-labelledby="success-title" aria-describedby="success-description">
+                        <div class="success-modal">
+                            <div class="success-modal-icon" aria-hidden="true">&#10003;</div>
+                            <span class="eyebrow">REGISTRO COMPLETADO</span>
+                            <h2 id="success-title">Expediente guardado</h2>
+                            <p id="success-description">{{ message }}</p>
+                            <p class="success-modal-note">En un momento volverás a la lista de expedientes.</p>
+                            <a class="btn btn-primary success-modal-button" href="{% url 'lista_expedientes' %}">Ver expedientes</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="form-card">
+        <div class="section-heading">
+            <div class="section-icon" aria-hidden="true">01</div>
+            <div>
+                <h2>Información del expediente</h2>
+            </div>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="data-form">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group {% if field.name == 'archivos' %}form-group-wide{% endif %}">
+                    {% if field.name == "rfc" %}
+                        <label for="{{ field.id_for_label }}">RFC</label>
+                    {% elif field.name == "direccion" %}
+                        <label for="{{ field.id_for_label }}">Dirección</label>
+                    {% else %}
+                        {{ field.label_tag }}
+                    {% endif %}
+                    {{ field }}
+                    {% if field.name == "archivos" and pending_documents %}
+                        <div class="pending-documents" role="status">
+                            <strong>Archivos conservados</strong>
+                            <ul>
+                                {% for documento in pending_documents %}
+                                    <li>{{ documento.name }}</li>
+                                {% endfor %}
+                            </ul>H
+                            <span>Se adjuntarán al expediente cuando corrijas los errores.</span>
+                        </div>
+                    {% elif field.help_text %}
+                        <small class="field-help">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="field-error">{{ field.errors|join:', ' }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <div class="form-actions form-group-wide">
+                <a href="{% url 'lista_expedientes' %}" class="btn btn-quiet">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar expediente <span aria-hidden="true">→</span></button>
+            </div>
+        </form>
+    </section>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        const successModal = document.getElementById("success-modal");
+        if (successModal) {
+            window.setTimeout(() => {
+                window.location.assign("{% url 'lista_expedientes' %}");
+            }, 3000);
+        }
+    </script>
+{% endblock %}
